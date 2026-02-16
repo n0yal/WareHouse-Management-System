@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+generator erd {
+    provider = "prisma-erd-generator"
+    output= "/home/noyal/ERD.svg"
+  }
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id            String      @id @default(uuid())
+  ean           String?     @unique
+  sku           String      @unique
+  name          String
+  description   String?
+  category      String
+  price         Float
+  minStockLevel Int
+  supplierId    String?
+  trackingType  String      @default("none")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  inventories   Inventory[]
+  orderItems    OrderItem[]
+  transactions  InventoryTransaction[]
+  supplier      Supplier?   @relation(fields: [supplierId], references: [id])
+}
+
+model Inventory {
+  id           String   @id @default(uuid())
+  productId    String
+  locationId   String
+  classification String @default("NORMAL")
+  rackLocation String?
+  lotNumber    String?
+  serialNumber String?
+  expiryDate   DateTime?
+  onHandQty    Int      @default(0)
+  allocatedQty Int      @default(0)
+  holdQty      Int      @default(0)
+  damagedQty   Int      @default(0)
+  updatedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  location     Location @relation(fields: [locationId], references: [id])
+  product      Product  @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@index([locationId])
+  @@index([classification])
+  @@index([rackLocation])
+  @@index([expiryDate])
+  @@unique([productId, locationId, lotNumber, serialNumber], map: "inventory_balance_key")
+}
+
+model Rack {
+  id          String   @id @default(uuid())
+  rackCode    String   @unique
+  zoneType    String
+  capacity    Int
+  currentLoad Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Location {
+  id           String                 @id @default(uuid())
+  name         String
+  zone         String
+  aisle        String
+  rack         String
+  shelf        String
+  capacity     Int
+  locationType String                 @default("storage")
+  isBlocked    Boolean                @default(false)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  inventories  Inventory[]
+  transactions InventoryTransaction[]
+}
+
+model Supplier {
+  id        String    @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  address   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique
+  customerId  String
+  type        String
+  status      String
+  totalAmount Float?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  orderItems  OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Float?
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InventoryTransaction {
+  id            String    @id @default(uuid())
+  productId     String
+  locationId    String?
+  lotNumber     String?
+  serialNumber  String?
+  txnType       String
+  qty           Int
+  referenceType String?
+  referenceId   String?
+  reason        String?
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  product       Product   @relation(fields: [productId], references: [id])
+  location      Location? @relation(fields: [locationId], references: [id])
+
+  @@index([productId, createdAt])
+  @@index([referenceType, referenceId])
+}
