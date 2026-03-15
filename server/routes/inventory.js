@@ -499,6 +499,55 @@ router.get('/alerts/low-stock', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch low stock items' });
     }
 });
+router.get('/alerts/expiry', async (req, res) => {
+    try {
+        const warningDays = parseInt(req.query.days) || 30;
+        const now = new Date();
+        const warningDate = new Date(now.getTime() + warningDays * 24 * 60 * 60 * 1000);
+        const expiredDate = now;
+        
+        const inventoryItems = await db_1.default.inventory.findMany({
+            where: {
+                expiryDate: { not: null },
+                onHandQty: { gt: 0 }
+            },
+            include: { product: true, location: true }
+        });
+        
+        const alerts = inventoryItems
+            .map(item => {
+                const expiryDate = new Date(item.expiryDate);
+                const isExpired = expiryDate < expiredDate;
+                const isExpiringSoon = !isExpired && expiryDate <= warningDate;
+                
+                if (!isExpired && !isExpiringSoon) return null;
+                
+                const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+                
+                return {
+                    id: item.id,
+                    productId: item.productId,
+                    productName: item.product?.name || 'Unknown',
+                    productSku: item.product?.sku || '-',
+                    lotNumber: item.lotNumber || '-',
+                    serialNumber: item.serialNumber || '-',
+                    expiryDate: item.expiryDate,
+                    daysUntilExpiry: daysUntilExpiry,
+                    status: isExpired ? 'EXPIRED' : 'EXPIRING_SOON',
+                    quantity: item.onHandQty,
+                    location: item.location ? `${item.location.zone}-${item.location.aisle}-${item.location.rack}` : '-',
+                    rackLocation: item.rackLocation || '-'
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+        
+        res.json(alerts);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to fetch expiry alerts' });
+    }
+});
 router.delete('/:id', async (req, res) => {
     try {
         const inventory = await db_1.default.inventory.findUnique({

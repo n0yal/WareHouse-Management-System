@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ListChecks, PackageCheck, Send, Undo2, ClipboardCheck, Boxes, ScanLine, BarChart3, Settings, Warehouse, Barcode, LogOut, Layers3 } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, PackageCheck, Send, Undo2, ClipboardCheck, Boxes, ScanLine, BarChart3, Settings, Warehouse, Barcode, LogOut, Layers3, Map } from "lucide-react";
 import { cn } from "./ui/utils";
 import { Button } from "./ui/button";
 const menuItems = [
@@ -7,6 +7,7 @@ const menuItems = [
     { id: "inbound", label: "Receiving", icon: ScanLine },
     { id: "putaway", label: "Putaway", icon: Boxes },
     { id: "racks", label: "Racks", icon: Layers3 },
+    { id: "warehouse-layout", label: "Warehouse Layout", icon: Map },
     { id: "inventory", label: "Inventory", icon: Package },
     { id: "picking", label: "Picking", icon: ListChecks },
     { id: "packing", label: "Packing", icon: PackageCheck },

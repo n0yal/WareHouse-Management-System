@@ -14,6 +14,7 @@ import { ReturnsPage } from "./components/ReturnsPage";
 import { CycleCountPage } from "./components/CycleCountPage";
 import { ProductMasterPage } from "./components/ProductMasterPage";
 import { RacksPage } from "./components/RacksPage";
+import { WarehouseLayoutPage } from "./components/WarehouseLayoutPage";
 import { Button } from "./components/ui/button";
 import { LoginPage } from "./components/LoginPage";
 
@@ -24,6 +25,7 @@ const ACCESS = {
         "products-master",
         "putaway",
         "racks",
+        "warehouse-layout",
         "inventory",
         "picking",
         "packing",
@@ -83,6 +85,8 @@ export default function App() {
                 return <PutawayPage />;
             case "racks":
                 return <RacksPage />;
+            case "warehouse-layout":
+                return <WarehouseLayoutPage />;
             case "picking":
                 return <PickingPage />;
             case "packing":

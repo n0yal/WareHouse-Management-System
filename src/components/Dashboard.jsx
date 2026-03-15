@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Progress } from "./ui/progress"
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar } from "recharts"
-import { AlertTriangle, Boxes, Clock3, PackageCheck, Truck } from "lucide-react"
+import { AlertTriangle, Boxes, Clock3, PackageCheck, Truck, CalendarX } from "lucide-react"
 
 const API_URL = "http://localhost:5000/api"
 
@@ -19,6 +19,7 @@ export function Dashboard() {
   const [inventory, setInventory] = useState([])
   const [putawayQueue, setPutawayQueue] = useState([])
   const [dispatchHistory, setDispatchHistory] = useState([])
+  const [expiryAlerts, setExpiryAlerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -29,6 +30,7 @@ export function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
+      
       const [ordersRes, inventoryRes, putawayRes, dispatchRes] = await Promise.all([
         fetch(`${API_URL}/orders`),
         fetch(`${API_URL}/inventory`),
@@ -51,6 +53,20 @@ export function Dashboard() {
       setInventory(inventoryData)
       setPutawayQueue(putawayData)
       setDispatchHistory(dispatchData)
+      
+      try {
+        const expiryRes = await fetch(`${API_URL}/inventory/alerts/expiry?days=90`)
+        if (expiryRes.ok) {
+          const expiryData = await expiryRes.json()
+          setExpiryAlerts(expiryData)
+        } else {
+          setExpiryAlerts([])
+        }
+      } catch (expiryErr) {
+        console.warn("Failed to fetch expiry alerts:", expiryErr)
+        setExpiryAlerts([])
+      }
+      
       setError("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard")
@@ -82,8 +98,9 @@ export function Dashboard() {
       const created = new Date(item.createdAt)
       return now.getTime() - created.getTime() > 6 * 60 * 60 * 1000
     }).length
-    return lowStockCount + receivingAgedCount
-  }, [inventory, now])
+    const expiredCount = expiryAlerts.filter((item) => item.status === "EXPIRED").length
+    return lowStockCount + receivingAgedCount + expiredCount
+  }, [inventory, expiryAlerts, now])
 
   const exceptionItems = useMemo(() => {
     return inventory
@@ -283,7 +300,20 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl">{openExceptions}</div>
-            <p className="text-xs text-muted-foreground">Low stock + aged receiving items</p>
+            <p className="text-xs text-muted-foreground">Low stock + aged receiving + expired</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm">Expiry Alerts</CardTitle>
+            <CalendarX className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl">{expiryAlerts.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {expiryAlerts.filter(i => i.status === 'EXPIRED').length} expired, {expiryAlerts.filter(i => i.status === 'EXPIRING_SOON').length} expiring soon
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -402,6 +432,39 @@ export function Dashboard() {
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     SKU: {item.sku} | LP: {item.lp} | Location: {item.location}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarX className="h-5 w-5 text-red-500" />
+            Expiry Alerts ({expiryAlerts.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {expiryAlerts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No expiry alerts. All products are within safe period.</p>
+          ) : (
+            <div className="space-y-3">
+              {expiryAlerts.slice(0, 10).map((item) => (
+                <div key={item.id} className={`p-3 border rounded-lg ${item.status === 'EXPIRED' ? 'border-red-300 bg-red-50' : 'border-orange-300 bg-orange-50'}`}>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">{item.productName}</p>
+                    <Badge variant={item.status === 'EXPIRED' ? 'destructive' : 'secondary'}>
+                      {item.status === 'EXPIRED' ? 'EXPIRED' : `${item.daysUntilExpiry} days`}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    SKU: {item.productSku} | Lot: {item.lotNumber} | Qty: {item.quantity}
+                  </p>
+                  <p className="text-sm mt-1">
+                    Expires: {new Date(item.expiryDate).toLocaleDateString()} | Location: {item.rackLocation}
                   </p>
                 </div>
               ))}

@@ -15,7 +15,51 @@ const API_URL = "http://localhost:5000/api"
 const generateLicensePlate = () => `LP-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`
 const normalizeCode = (value) => (value || "").trim().toLowerCase()
 
-const createLine = () => ({
+const parseExpiryFromQR = (qrData) => {
+  const datePatterns = [
+    /(\d{4})-(\d{2})-(\d{2})/,
+    /(\d{2})\/(\d{2})\/(\d{4})/,
+    /(\d{2})-(\d{2})-(\d{4})/,
+    /EXP(\d{8})/i,
+    /(\d{8})/,
+  ]
+  
+  const qrString = String(qrData || "")
+  
+  for (const pattern of datePatterns) {
+    const match = qrString.match(pattern)
+    if (match) {
+      let year, month, day
+      if (pattern.source.includes('EXP')) {
+        const dateStr = match[1]
+        year = dateStr.slice(0, 4)
+        month = dateStr.slice(4, 6)
+        day = dateStr.slice(6, 8)
+      } else if (pattern.source.includes('/')) {
+        const parts = match[0].split('/')
+        month = parts[0]
+        day = parts[1]
+        year = parts[2]
+      } else if (match[1].length === 4) {
+        year = match[1]
+        month = match[2]
+        day = match[3]
+      } else {
+        day = match[1]
+        month = match[2]
+        year = match[3]
+      }
+      
+      const parsed = new Date(year, month - 1, day)
+      if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 2020 && parsed.getFullYear() < 2100) {
+        return parsed.toISOString().split('T')[0]
+      }
+    }
+  }
+  return null
+}
+
+const createLine = (scannedExpiry = null) => ({
   id: crypto.randomUUID(),
   productId: "",
   productName: "",
@@ -25,7 +69,8 @@ const createLine = () => ({
   damagedQty: 0,
   shortReason: "",
   lotNumber: "",
-  expiryDate: "",
+  expiryDate: scannedExpiry || "",
+  noExpiry: scannedExpiry ? false : true,
   qualityHold: "no",
   licensePlate: generateLicensePlate(),
 })
@@ -120,7 +165,7 @@ export function InboundPage() {
     setLines((prev) => (prev.length === 1 ? prev : prev.filter((line) => line.id !== lineId)))
   }
 
-  const addLineFromCode = (value) => {
+  const addLineFromCode = (value, rawQRData = null) => {
     if (!value || value.length < 3) return false
     const scanCode = normalizeCode(value)
     const product = products.find((p) => {
@@ -130,10 +175,12 @@ export function InboundPage() {
     })
     if (!product) return false
 
+    const scannedExpiry = rawQRData ? parseExpiryFromQR(rawQRData) : null
+
     setLines((prev) => [
       ...prev,
       {
-        ...createLine(),
+        ...createLine(scannedExpiry),
         productId: product.id,
         productName: product.name,
         barcode: product.ean || product.sku,
@@ -191,7 +238,7 @@ export function InboundPage() {
       const codes = await detectorRef.current.detect(videoRef.current)
       if (codes.length > 0) {
         const rawValue = codes[0]?.rawValue || ""
-        const matched = addLineFromCode(rawValue)
+        const matched = addLineFromCode(rawValue, rawValue)
         if (matched) {
           setQuickBarcode("")
           setScanError("")
@@ -220,7 +267,7 @@ export function InboundPage() {
       const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result) => {
         if (!result) return
         const rawValue = result.getText ? result.getText() : String(result.text || "")
-        const matched = addLineFromCode(rawValue)
+        const matched = addLineFromCode(rawValue, rawValue)
         if (matched) {
           setQuickBarcode("")
           setScanError("")
@@ -351,7 +398,7 @@ export function InboundPage() {
             locationId: receivingLocation.id,
             lotNumber: line.lotNumber || null,
             serialNumber: licensePlate,
-            expiryDate: line.expiryDate || null,
+            expiryDate: line.noExpiry ? null : (line.expiryDate || null),
             updatedBy: "receiving-user",
             txnType: "receive",
             referenceType: "LICENSE_PLATE",
@@ -586,8 +633,26 @@ export function InboundPage() {
                         <Input
                           type="date"
                           value={line.expiryDate}
+                          disabled={line.noExpiry}
                           onChange={(e) => updateLine(line.id, "expiryDate", e.target.value)}
                         />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`noExpiry-${line.id}`}
+                            checked={line.noExpiry || false}
+                            onChange={(e) => {
+                              updateLine(line.id, "noExpiry", e.target.checked)
+                              if (e.target.checked) {
+                                updateLine(line.id, "expiryDate", "")
+                              }
+                            }}
+                            className="h-4 w-4"
+                          />
+                          <label htmlFor={`noExpiry-${line.id}`} className="text-sm text-muted-foreground cursor-pointer">
+                            No Expiry
+                          </label>
+                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -764,6 +829,12 @@ export function InboundPage() {
                   onChange={(e) => setSelectedLine({ ...selectedLine, licensePlate: e.target.value })}
                 />
               </div>
+              {selectedLine.expiryDate && (
+                <div>
+                  <Label>Expiry Date (from QR)</Label>
+                  <Input value={selectedLine.expiryDate} readOnly className="bg-muted" />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Expected Qty</Label>
