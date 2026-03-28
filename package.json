@@ -54,6 +54,7 @@
             "vaul": "^1.1.2"
       },
       "devDependencies": {
+            "@jest/globals": "^30.3.0",
             "@mermaid-js/mermaid-cli": "^11.12.0",
             "@types/cors": "^2.8.19",
             "@types/express": "^5.0.6",
@@ -61,8 +62,10 @@
             "@types/pg": "^8.16.0",
             "@vitejs/plugin-react-swc": "^3.10.2",
             "concurrently": "^9.2.1",
+            "jest": "^30.3.0",
             "prisma-erd-generator": "^2.4.2",
             "puppeteer": "^23.11.1",
+            "supertest": "^7.2.2",
             "ts-node": "^10.9.2",
             "typescript": "^5.9.3",
             "vite": "6.3.5"
@@ -71,6 +74,11 @@
             "dev": "vite",
             "build": "vite build",
             "server": "node server/index.js",
-            "dev:full": "concurrently \"npm run server\" \"npm run dev\""
+            "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
+			"test": "npm run test:unit",
+			"test:all": "NODE_OPTIONS=--no-webstorage jest --verbose",
+			"test:unit": "NODE_OPTIONS=--no-webstorage jest tests/unit.test.js --verbose",
+			"test:integration": "NODE_OPTIONS=--no-webstorage jest tests/integration.test.js --verbose",
+			"test:functional": "NODE_OPTIONS=--no-webstorage jest tests/functional.test.js --verbose"
       }
 }

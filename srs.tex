@@ -1,0 +1,786 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+\begin{document}
+
+% -------------------------
+% TITLE PAGE
+% -------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{1.5cm}
+    
+    \Huge
+    \textbf{SmartwareERP}
+    
+    \vspace{0.8cm}
+    \LARGE
+    \textbf{Software Requirements Specification}\\
+    \textbf{SRS -- REVISION 1.0}
+    
+    \vspace{2cm}
+    
+    \Large
+    \textbf{Bachelor of Technology}\\
+    \textbf{in}\\
+    \textbf{Computer Science and Design}
+    
+    \vspace{2cm}
+    
+    \Large
+    Submitted by:
+    
+    \vspace{0.5cm}
+    \large
+    \begin{tabular}{l c}
+        NOYAL & -- FIT23CSXXX \\
+    \end{tabular}
+    
+    \vfill
+    
+    \Large
+    \textbf{FEDERAL INSTITUTE OF SCIENCE AND TECHNOLOGY (FISAT)}\\
+    \normalsize
+    \textbf{ANGAMALY-683577}
+    
+    \vspace{1.5cm}
+    
+    \large
+    Affiliated to\\
+    \textbf{APJ ABDUL KALAM TECHNOLOGICAL UNIVERSITY}\\
+    \textbf{KERALA}
+    
+\end{titlepage}
+
+% -------------------------
+% TABLE OF CONTENTS
+% -------------------------
+\tableofcontents
+\newpage
+
+% -------------------------
+% CHAPTER 1: INTRODUCTION
+% -------------------------
+\chapter{Introduction}
+
+\section{Purpose}
+The purpose of this document is to provide a comprehensive description of the \textbf{SmartwareERP} Warehouse Management System (WMS). It specifies the functional and non-functional requirements, system architecture, external interfaces, and data models. SmartwareERP is a full-stack web application designed to digitize and streamline end-to-end warehouse operations including inbound receiving, AI-powered hazard classification, smart putaway, inventory tracking, order fulfilment (picking, packing, shipping), dispatch management, and real-time warehouse layout visualization.
+
+\section{Document Conventions}
+\begin{itemize}
+    \item All mandatory requirements use the word ``shall''.
+    \item Functional Requirements use IDs: FR-SWE-XXX.
+    \item Non-Functional Requirements use IDs: NFR-SWE-XXX.
+    \item Priority levels: High / Medium / Low.
+\end{itemize}
+
+\section{Intended Audience}
+\begin{itemize}
+    \item \textbf{Developers:} To guide the implementation and integration of modules.
+    \item \textbf{Project Guides/Stakeholders:} To review the scope, architecture, and progress of the project.
+    \item \textbf{Warehouse Operators (Admin/Staff):} To understand the capabilities and workflows of the system.
+\end{itemize}
+
+\section{Product Scope}
+SmartwareERP is a web-based Warehouse Management System that provides:
+\begin{itemize}
+    \item \textbf{Inbound Receiving:} Receive goods into the warehouse, assign license plates, and record lot/serial/expiry information.
+    \item \textbf{AI-Powered Hazard Classification:} Automatically classify products as INFLAMMABLE, TOXIC, FRAGILE, or NORMAL using the Google Gemini API.
+    \item \textbf{Smart Putaway:} AI-driven rack suggestions based on hazard classification, zone compatibility, and rack capacity.
+    \item \textbf{Inventory Management:} Real-time tracking of on-hand, allocated, hold, and damaged quantities with license-plate-level granularity.
+    \item \textbf{Order Fulfilment:} End-to-end picking, packing, and shipping workflows with order tracking.
+    \item \textbf{Dispatch Management:} License-plate-verified outbound dispatch with automatic rack load adjustments.
+    \item \textbf{Warehouse Visualization:} Interactive warehouse layout and seat-map views showing zone utilization and rack-level inventory.
+    \item \textbf{Alerts \& Reporting:} Low-stock alerts, expiry notifications, throughput analytics, and dock-to-stock time tracking.
+    \item \textbf{Role-Based Access Control:} Separate Admin and Staff roles with permission-gated module access.
+\end{itemize}
+
+\section{References}
+\begin{itemize}
+    \item IEEE Standard for Software Requirements Specifications (IEEE Std 830-1998)
+    \item Node.js Documentation
+    \item Express.js Framework Documentation
+    \item React Documentation
+    \item Prisma ORM Documentation
+    \item PostgreSQL Documentation
+    \item Google Gemini API Documentation
+    \item Vite Build Tool Documentation
+    \item Tailwind CSS Documentation
+    \item Radix UI Component Library Documentation
+\end{itemize}
+
+% -------------------------
+% CHAPTER 2: OVERALL DESCRIPTION
+% -------------------------
+\chapter{Overall Description}
+
+\section{Product Perspective}
+SmartwareERP is a monolithic web-based application utilizing a Client-Server architecture. The frontend is built with React (via Vite) using Radix UI primitives and Tailwind CSS for styling. The backend is an Express.js server that exposes RESTful APIs, with data persisted in a PostgreSQL database through the Prisma ORM. AI-powered hazard classification is performed via the Google Gemini generative AI API.
+
+\section{Product Functions}
+High-level list of modules:
+\begin{itemize}
+    \item \textbf{Authentication Module:} Role-based login for Admin and Staff users with session persistence via localStorage.
+    \item \textbf{Operations Dashboard:} Real-time KPIs including inbound pending count, orders to pick, orders to ship today, open exceptions, expiry alerts, hourly throughput charts, dock-to-stock time trends, active task queues, and replenishment alerts.
+    \item \textbf{Product Master:} Full CRUD management of product catalogue with SKU, EAN, category, pricing, minimum stock levels, supplier linkage, and tracking type configuration.
+    \item \textbf{Inbound Receiving:} Goods receipt with license plate assignment, lot/serial number tracking, expiry date recording, and AI-driven hazard classification on receive.
+    \item \textbf{Smart Putaway:} AI-powered rack suggestion engine that matches product hazard classification to compatible zone-typed racks with capacity validation.
+    \item \textbf{Rack Management:} CRUD for storage racks with zone type, capacity tracking, and real-time current load monitoring.
+    \item \textbf{Warehouse Layout \& Seat Map:} Visual representation of warehouse zones (Receiving, Storage A/B/C, Packing, Dispatch) with rack utilization percentages, bin-level occupancy visualization, and drill-down item details.
+    \item \textbf{Inventory Management:} Comprehensive inventory view with on-hand quantity, storage status (RECEIVED/STORED/SHIPPED), hazard classification badges, and search/filter capabilities.
+    \item \textbf{Picking:} Order-driven picking workflow to prepare items for outbound fulfilment.
+    \item \textbf{Packing:} Consolidation and packing of picked items for shipment.
+    \item \textbf{Shipping:} Outbound dispatch with license plate verification and real-time inventory deduction.
+    \item \textbf{Returns:} Module for handling returned goods (placeholder for future expansion).
+    \item \textbf{Cycle Count:} Periodic inventory auditing module (placeholder for future expansion).
+    \item \textbf{Reports \& Analytics:} Data-driven reports with charting capabilities using Recharts.
+    \item \textbf{Settings:} System configuration and preference management.
+    \item \textbf{Supplier Management:} Full CRUD for supplier records with contact details.
+    \item \textbf{Customer Management:} Full CRUD for customer records with contact details.
+    \item \textbf{Order Management:} Full CRUD for orders with order items, customer linkage, status tracking, and type classification (inbound/outbound).
+    \item \textbf{Location Management:} CRUD for warehouse locations with zone, aisle, rack, shelf, capacity, and blocking support.
+\end{itemize}
+
+\section{User Classes and Characteristics}
+\begin{table}[h!]
+    \centering
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabularx}{\textwidth}{|l|X|l|}
+        \hline
+        \textbf{User Type} & \textbf{Description} & \textbf{Technical Level} \\
+        \hline
+        Admin & Full access to all 14 modules: dashboard, products, receiving, putaway, racks, warehouse layout, inventory, picking, packing, shipping, returns, cycle count, reports, and settings. & High \\
+        \hline
+        Staff & Restricted access to operational modules: inbound receiving, putaway, inventory, and shipping. & Medium \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\section{Operating Environment}
+\begin{itemize}
+    \item \textbf{Operating System:} Windows / Linux / macOS (server-side), modern browsers (client-side)
+    \item \textbf{Runtime:} Node.js
+    \item \textbf{Frontend Framework:} React 18 with Vite 6
+    \item \textbf{Backend Framework:} Express.js 5
+    \item \textbf{ORM:} Prisma 7.x
+    \item \textbf{Database:} PostgreSQL 14+
+    \item \textbf{AI Service:} Google Gemini API (gemini-2.5-flash model)
+    \item \textbf{Protocol:} HTTP/HTTPS (REST APIs on port 5000, frontend dev server on port 5173)
+\end{itemize}
+
+\section{Design and Implementation Constraints}
+\begin{itemize}
+    \item \textbf{Concurrency:} Database transactions (Prisma \$transaction) are used for critical multi-step operations like putaway and dispatch to prevent race conditions.
+    \item \textbf{Zone Safety:} Putaway operations enforce zone-type compatibility -- a product classified as INFLAMMABLE can only be placed in a rack zoned for INFLAMMABLE storage.
+    \item \textbf{Status Workflow:} Inventory follows a strict status lifecycle: RECEIVED $\rightarrow$ STORED $\rightarrow$ SHIPPED. Putaway is only allowed on RECEIVED items; dispatch is only allowed on STORED items.
+    \item \textbf{AI Dependency:} Hazard classification requires a valid Google Gemini API key; the system gracefully degrades to ``NORMAL'' classification if the AI service is unavailable.
+    \item \textbf{License Plate Tracking:} The serial number field doubles as a license plate identifier for inventory tracking throughout the warehouse lifecycle.
+\end{itemize}
+
+\section{Assumptions and Dependencies}
+\begin{itemize}
+    \item \textbf{Connectivity:} Requires network access for the frontend to communicate with the backend API and for the backend to reach the Gemini AI service.
+    \item \textbf{Database:} A running PostgreSQL instance with the schema migrated via Prisma is assumed.
+    \item \textbf{Third-Party Libraries:} Radix UI components, Tailwind CSS, Recharts, Lucide React icons, and other npm packages as specified in package.json.
+    \item \textbf{Authentication:} The current version uses a hardcoded credential list for demonstration purposes; production deployment would require a proper authentication backend.
+\end{itemize}
+
+% -------------------------
+% CHAPTER 3: EXTERNAL INTERFACE REQUIREMENTS
+% -------------------------
+\chapter{External Interface Requirements}
+
+\section{User Interfaces}
+\begin{itemize}
+    \item \textbf{Login Page:} Email and password authentication form with role-based session creation.
+    \item \textbf{Sidebar Navigation:} Collapsible sidebar with 14 module links, user profile display, role indicator, and logout button. Responsive mobile hamburger menu overlay.
+    \item \textbf{Operations Dashboard:} Card-based KPI display with live charts (hourly throughput bar chart, dock-to-stock line chart), active task queue with priority badges and progress bars, replenishment alerts, exception item lists, and expiry alert panels.
+    \item \textbf{Product Master Page:} Table-based product listing with create/edit/delete capabilities.
+    \item \textbf{Inbound Receiving Page:} Form-driven goods receipt interface with product selection, quantity input, license plate assignment, lot/serial number capture, and expiry date picker.
+    \item \textbf{Putaway Page:} License-plate lookup with AI-suggested rack display and one-click putaway confirmation.
+    \item \textbf{Racks Page:} Table-based rack listing with zone type, capacity, and current load visualization.
+    \item \textbf{Warehouse Layout Page:} Zone-based graphical warehouse map with color-coded racks and utilization percentages.
+    \item \textbf{Warehouse Seat Map:} Bin-level occupancy visualization with drill-down item details (product name, SKU, license plate, classification, quantity).
+    \item \textbf{Inventory Page:} Searchable and filterable inventory table with hazard classification badges, storage status indicators, and inline actions.
+    \item \textbf{Picking/Packing/Shipping Pages:} Order-driven fulfilment workflow interfaces.
+    \item \textbf{Suppliers/Customers Pages:} CRUD forms for managing supplier and customer records.
+    \item \textbf{Orders Page:} Order listing with customer details, order items, status management, and type classification.
+    \item \textbf{Reports Page:} Analytics dashboard with customizable charts and data summaries.
+    \item \textbf{Settings Page:} System configuration interface.
+\end{itemize}
+
+\section{Hardware Interfaces}
+\begin{itemize}
+    \item \textbf{Desktop/Laptop:} Primary interface for all warehouse management operations.
+    \item \textbf{Mobile Devices:} Responsive design supports mobile browsers for on-the-floor warehouse operations.
+\end{itemize}
+
+\section{Software Interfaces}
+\begin{itemize}
+    \item \textbf{Express.js REST API:} Backend communication layer exposing endpoints at \texttt{http://localhost:5000/api}.
+    \item \textbf{Prisma ORM:} Database abstraction layer with type-safe query builder.
+    \item \textbf{PostgreSQL:} Relational database for persistent data storage.
+    \item \textbf{Google Gemini API:} External AI service for real-time product hazard classification.
+    \item \textbf{Vite Dev Server:} Frontend development and hot-module-replacement server on port 5173.
+\end{itemize}
+
+\section{Communication Interfaces}
+\begin{itemize}
+    \item REST APIs using JSON over HTTP/HTTPS.
+    \item CORS-enabled cross-origin requests between frontend (port 5173) and backend (port 5000).
+    \item HTTPS calls to Google Gemini API for AI classification requests.
+\end{itemize}
+
+% -------------------------
+% CHAPTER 4: FUNCTIONAL REQUIREMENTS
+% -------------------------
+\chapter{Functional Requirements}
+
+\section{Authentication Module}
+
+\subsection{User Login}
+\noindent\textbf{Requirement ID:} FR-SWE-001\\
+\textbf{Description:} Users shall be able to login with email and password credentials. The system shall validate credentials and create a session with role-based access permissions.\\
+\textbf{Inputs:} Email, Password\\
+\textbf{Outputs:} User session object (email, role, name), stored in localStorage\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} None
+
+\subsection{Role-Based Access Control}
+\noindent\textbf{Requirement ID:} FR-SWE-002\\
+\textbf{Description:} The system shall enforce role-based access control. Admin users shall access all 14 modules. Staff users shall access only: Inbound, Putaway, Inventory, and Shipping.\\
+\textbf{Inputs:} User role (admin/staff)\\
+\textbf{Outputs:} Filtered navigation menu and page access\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-001
+
+\section{Product Management}
+
+\subsection{Product CRUD Operations}
+\noindent\textbf{Requirement ID:} FR-SWE-003\\
+\textbf{Description:} Admin users shall be able to create, read, update, and delete products in the product master catalogue.\\
+\textbf{Inputs:} Product Name, SKU, EAN (optional), Description, Category, Price, Minimum Stock Level, Supplier ID, Tracking Type\\
+\textbf{Outputs:} Product record with auto-generated UUID, timestamps\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-001
+
+\section{Inbound Receiving}
+
+\subsection{Goods Receipt}
+\noindent\textbf{Requirement ID:} FR-SWE-004\\
+\textbf{Description:} Users shall be able to receive goods into the warehouse by specifying a product, quantity, receiving location, and optional lot number, serial number (license plate), and expiry date. The system shall create or update an inventory record accordingly.\\
+\textbf{Inputs:} Product ID, Quantity, Location ID, Updated By, Lot Number, Serial Number (License Plate), Expiry Date, Transaction Type\\
+\textbf{Outputs:} Inventory record with storage status ``RECEIVED'', inventory transaction log entry\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-003
+
+\subsection{AI Hazard Classification on Receive}
+\noindent\textbf{Requirement ID:} FR-SWE-005\\
+\textbf{Description:} When a receive transaction is performed, the system shall automatically classify the product's hazard level by sending the product name and description to the Google Gemini API. The classification shall be one of: INFLAMMABLE, TOXIC, FRAGILE, or NORMAL.\\
+\textbf{Inputs:} Product Name, Product Description (sent to Gemini API)\\
+\textbf{Outputs:} Hazard classification label stored on the inventory record\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-004, Gemini API Key configuration
+
+\section{Smart Putaway}
+
+\subsection{Putaway Suggestion}
+\noindent\textbf{Requirement ID:} FR-SWE-006\\
+\textbf{Description:} Given a license plate, the system shall suggest the most suitable rack for putaway based on the product's hazard classification. The suggested rack shall have a matching zone type and available capacity.\\
+\textbf{Inputs:} License Plate (serial number)\\
+\textbf{Outputs:} Inventory details, Suggested Rack (rack code, zone type, capacity, current load)\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-004, FR-SWE-005
+
+\subsection{Execute Putaway}
+\noindent\textbf{Requirement ID:} FR-SWE-007\\
+\textbf{Description:} Users shall be able to complete a putaway operation by confirming a license plate and target rack code. The system shall validate zone compatibility, verify rack capacity, update the inventory record with the rack location, increment the rack's current load, and log a putaway transaction.\\
+\textbf{Inputs:} License Plate, Rack Code, Updated By\\
+\textbf{Outputs:} Updated inventory record (status changes to ``STORED''), updated rack load, transaction log\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-006
+
+\section{Inventory Management}
+
+\subsection{Inventory Listing \& Search}
+\noindent\textbf{Requirement ID:} FR-SWE-008\\
+\textbf{Description:} Users shall be able to view all inventory records with product details, location, on-hand quantity, storage status, and hazard classification. The system shall support searching by serial number, lot number, product name, SKU, and EAN.\\
+\textbf{Inputs:} Optional search query, location filter\\
+\textbf{Outputs:} List of inventory records with computed available quantity and status (in\_stock, low\_stock, out\_of\_stock)\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-004
+
+\subsection{Low Stock Alerts}
+\noindent\textbf{Requirement ID:} FR-SWE-009\\
+\textbf{Description:} The system shall automatically identify inventory items whose available quantity falls below the product's configured minimum stock level and present them as low-stock alerts.\\
+\textbf{Inputs:} None (automatic comparison against minStockLevel)\\
+\textbf{Outputs:} List of low-stock inventory items\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-003, FR-SWE-008
+
+\subsection{Expiry Alerts}
+\noindent\textbf{Requirement ID:} FR-SWE-010\\
+\textbf{Description:} The system shall identify inventory items that are expired or expiring within a configurable warning period (default 30 days) and classify them as EXPIRED or EXPIRING\_SOON with days-until-expiry calculation.\\
+\textbf{Inputs:} Warning period (days, query parameter)\\
+\textbf{Outputs:} Sorted list of expiry alerts with product details, lot number, quantity, location, and expiry status\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-004
+
+\subsection{Inventory Deletion}
+\noindent\textbf{Requirement ID:} FR-SWE-011\\
+\textbf{Description:} Admin users shall be able to delete inventory records. The system shall decrement the associated rack's current load and log a deletion transaction.\\
+\textbf{Inputs:} Inventory ID\\
+\textbf{Outputs:} Deleted inventory record, updated rack load, transaction log entry\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-008
+
+\section{Dispatch Management}
+
+\subsection{Outbound Dispatch}
+\noindent\textbf{Requirement ID:} FR-SWE-012\\
+\textbf{Description:} Users shall be able to dispatch inventory by specifying a license plate and quantity. The system shall verify that the inventory status is STORED, validate available quantity, deduct from on-hand quantity, decrement rack load, and log a dispatch transaction.\\
+\textbf{Inputs:} License Plate, Quantity to Dispatch, Updated By\\
+\textbf{Outputs:} Dispatch confirmation with dispatched quantity, available quantity before/after, updated inventory record\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-007
+
+\subsection{Dispatch History}
+\noindent\textbf{Requirement ID:} FR-SWE-013\\
+\textbf{Description:} Users shall be able to view the complete dispatch history showing all outbound dispatch transactions with product details, quantities, timestamps, and operator information.\\
+\textbf{Inputs:} Optional limit parameter (default 100, max 500)\\
+\textbf{Outputs:} List of dispatch transaction records\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-012
+
+\section{Warehouse Visualization}
+
+\subsection{Warehouse Layout}
+\noindent\textbf{Requirement ID:} FR-SWE-014\\
+\textbf{Description:} The system shall provide a visual warehouse layout organized by zones (Receiving, Storage A, Storage B, Storage C, Packing, Dispatch) showing all racks with their utilization percentages and stored items.\\
+\textbf{Inputs:} None\\
+\textbf{Outputs:} Zone-grouped rack data with utilization metrics and item-level details\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-007
+
+\subsection{Warehouse Seat Map}
+\noindent\textbf{Requirement ID:} FR-SWE-015\\
+\textbf{Description:} The system shall provide a bin-level seat-map visualization showing individual rack positions, their occupancy status, and stored item details (product name, SKU, license plate, classification, quantity).\\
+\textbf{Inputs:} None\\
+\textbf{Outputs:} Zone-grouped racks with bin-level occupancy data\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-014
+
+\section{Rack Management}
+
+\subsection{Rack CRUD Operations}
+\noindent\textbf{Requirement ID:} FR-SWE-016\\
+\textbf{Description:} Admin users shall be able to create and view racks. Each rack shall have a unique rack code, zone type (INFLAMMABLE, TOXIC, FRAGILE, NORMAL), capacity, and automatically tracked current load.\\
+\textbf{Inputs:} Rack Code, Zone Type, Capacity\\
+\textbf{Outputs:} Rack record with current load\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-001
+
+\section{Order Management}
+
+\subsection{Order CRUD Operations}
+\noindent\textbf{Requirement ID:} FR-SWE-017\\
+\textbf{Description:} Users shall be able to create, view, update, and delete orders. Each order shall have an order number, customer linkage, type (inbound/outbound), status, total amount, notes, and associated order items with product and quantity details.\\
+\textbf{Inputs:} Order Number, Customer ID, Type, Status, Total Amount, Notes, Order Items (Product ID, Quantity, Unit Price)\\
+\textbf{Outputs:} Order record with customer and order item details\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-003
+
+\section{Supplier \& Customer Management}
+
+\subsection{Supplier CRUD Operations}
+\noindent\textbf{Requirement ID:} FR-SWE-018\\
+\textbf{Description:} Users shall be able to create, view, update, and delete supplier records.\\
+\textbf{Inputs:} Name, Email, Phone, Address\\
+\textbf{Outputs:} Supplier record with auto-generated UUID and timestamps\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-001
+
+\subsection{Customer CRUD Operations}
+\noindent\textbf{Requirement ID:} FR-SWE-019\\
+\textbf{Description:} Users shall be able to create, view, update, and delete customer records.\\
+\textbf{Inputs:} Name, Email, Phone, Address\\
+\textbf{Outputs:} Customer record with auto-generated UUID and timestamps\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-001
+
+\section{Location Management}
+
+\subsection{Location CRUD Operations}
+\noindent\textbf{Requirement ID:} FR-SWE-020\\
+\textbf{Description:} Users shall be able to create, view, update, and delete warehouse locations with zone, aisle, rack, shelf addressing, capacity, location type (receiving/storage), and blocking status.\\
+\textbf{Inputs:} Name, Zone, Aisle, Rack, Shelf, Capacity, Location Type, Is Blocked\\
+\textbf{Outputs:} Location record with auto-generated UUID and timestamps\\
+\textbf{Priority:} Medium\\
+\textbf{Dependencies:} FR-SWE-001
+
+\section{Dashboard \& Analytics}
+
+\subsection{Operations Dashboard}
+\noindent\textbf{Requirement ID:} FR-SWE-021\\
+\textbf{Description:} The dashboard shall display real-time KPIs: inbound pending count, orders to pick, orders to ship today, open exceptions (low stock + aged receiving + expired items), expiry alert count, hourly throughput chart (received/picked/shipped), dock-to-stock time trend (7-day line chart), active task queue with priority and progress tracking, replenishment alerts, and exception item details.\\
+\textbf{Inputs:} Aggregated data from orders, inventory, putaway queue, dispatch history, and expiry alerts APIs\\
+\textbf{Outputs:} Visual dashboard with cards, charts, and data tables\\
+\textbf{Priority:} High\\
+\textbf{Dependencies:} FR-SWE-004, FR-SWE-012, FR-SWE-017
+
+% -------------------------
+% CHAPTER 5: NON-FUNCTIONAL REQUIREMENTS
+% -------------------------
+\chapter{Non-Functional Requirements}
+
+\section{Performance}
+
+\subsection{API Response Time}
+\noindent\textbf{Requirement ID:} NFR-SWE-001\\
+\textbf{Description:} All REST API responses shall return within 1 second under normal load.\\
+\textbf{Priority:} High
+
+\subsection{AI Classification Timeout}
+\noindent\textbf{Requirement ID:} NFR-SWE-002\\
+\textbf{Description:} The Gemini API call for hazard classification shall complete within 5 seconds. If the call fails or times out, the system shall default to ``NORMAL'' classification.\\
+\textbf{Priority:} Medium
+
+\section{Security}
+
+\subsection{Session Management}
+\noindent\textbf{Requirement ID:} NFR-SWE-003\\
+\textbf{Description:} User sessions shall be stored in the browser's localStorage and shall persist across page refreshes.\\
+\textbf{Priority:} High
+
+\subsection{CORS Configuration}
+\noindent\textbf{Requirement ID:} NFR-SWE-004\\
+\textbf{Description:} The backend shall enforce CORS policies, allowing requests only from authorized frontend origins (localhost:5173, localhost:3000, localhost:3001, localhost:3002).\\
+\textbf{Priority:} High
+
+\section{Reliability}
+
+\subsection{Transaction Integrity}
+\noindent\textbf{Requirement ID:} NFR-SWE-005\\
+\textbf{Description:} Critical multi-step operations (putaway, dispatch) shall use database transactions to ensure atomicity. If any step fails, all changes shall be rolled back.\\
+\textbf{Priority:} High
+
+\subsection{Graceful AI Degradation}
+\noindent\textbf{Requirement ID:} NFR-SWE-006\\
+\textbf{Description:} If the AI classification service is unavailable, the system shall continue to function by defaulting to NORMAL classification without interrupting warehouse operations.\\
+\textbf{Priority:} High
+
+\section{Usability}
+
+\subsection{Responsive Design}
+\noindent\textbf{Requirement ID:} NFR-SWE-007\\
+\textbf{Description:} The user interface shall be responsive and usable on desktop (1024px+) and mobile devices with a collapsible navigation sidebar.\\
+\textbf{Priority:} Medium
+
+\section{Maintainability}
+
+\subsection{Schema Migration}
+\noindent\textbf{Requirement ID:} NFR-SWE-008\\
+\textbf{Description:} Database schema changes shall be managed through Prisma migrations, ensuring reproducible and version-controlled schema evolution.\\
+\textbf{Priority:} Medium
+
+% -------------------------
+% CHAPTER 6: DATA REQUIREMENTS
+% -------------------------
+\chapter{Data Requirements}
+
+\section{Database Design}
+The PostgreSQL database follows a relational schema managed by Prisma ORM with the following entity relationships:
+\begin{itemize}
+    \item Product (1:N) Inventory
+    \item Product (1:N) OrderItem
+    \item Product (1:N) InventoryTransaction
+    \item Supplier (1:N) Product
+    \item Customer (1:N) Order
+    \item Order (1:N) OrderItem
+    \item Location (1:N) Inventory
+    \item Location (1:N) InventoryTransaction
+    \item Inventory has a composite unique constraint on (productId, locationId, lotNumber, serialNumber)
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{erd.png}
+    \caption{Entity Relationship Diagram of SmartwareERP database schema}
+\end{figure}
+
+\section{Data Dictionary}
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Field Name} & \textbf{Data Type} & \textbf{Description} \\
+        \hline
+        id & UUID (PK) & Auto-generated unique identifier for all entities \\
+        \hline
+        sku & String (Unique) & Stock Keeping Unit code for products \\
+        \hline
+        ean & String (Unique) & European Article Number / barcode (optional) \\
+        \hline
+        classification & String & Hazard category: INFLAMMABLE, TOXIC, FRAGILE, NORMAL \\
+        \hline
+        onHandQty & Integer & Current on-hand quantity in inventory \\
+        \hline
+        allocatedQty & Integer & Quantity allocated to orders \\
+        \hline
+        holdQty & Integer & Quantity on hold (quality, inspection) \\
+        \hline
+        damagedQty & Integer & Quantity identified as damaged \\
+        \hline
+        rackLocation & String & Rack code where inventory is physically stored \\
+        \hline
+        serialNumber & String & License plate identifier for inventory tracking \\
+        \hline
+        lotNumber & String & Lot/batch number for traceability \\
+        \hline
+        expiryDate & DateTime & Product expiry date for perishable goods \\
+        \hline
+        rackCode & String (Unique) & Unique identifier for warehouse racks \\
+        \hline
+        zoneType & String & Rack zone type matching hazard classification \\
+        \hline
+        capacity & Integer & Maximum storage capacity of rack/location \\
+        \hline
+        currentLoad & Integer & Current items stored in the rack \\
+        \hline
+        txnType & String & Transaction type: receive, putaway, outbound\_dispatch, adjust, delete \\
+        \hline
+        minStockLevel & Integer & Threshold for low-stock alert generation \\
+        \hline
+        trackingType & String & Tracking method: none, lot, serial \\
+        \hline
+        locationType & String & Location category: receiving, storage \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\section{Entity Models}
+
+\subsection{Product}
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Field} & \textbf{Type} & \textbf{Notes} \\
+        \hline
+        id & UUID & Primary Key, auto-generated \\
+        ean & String? & Unique, optional barcode \\
+        sku & String & Unique, required \\
+        name & String & Product name \\
+        description & String? & Optional product description \\
+        category & String & Product category \\
+        price & Float & Unit price \\
+        minStockLevel & Int & Low-stock alert threshold \\
+        supplierId & String? & FK to Supplier \\
+        trackingType & String & Default: ``none'' \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\subsection{Inventory}
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Field} & \textbf{Type} & \textbf{Notes} \\
+        \hline
+        id & UUID & Primary Key \\
+        productId & String & FK to Product \\
+        locationId & String & FK to Location \\
+        classification & String & Hazard class, default: ``NORMAL'' \\
+        rackLocation & String? & Assigned rack code \\
+        lotNumber & String? & Batch identifier \\
+        serialNumber & String? & License plate \\
+        expiryDate & DateTime? & Expiry for perishables \\
+        onHandQty & Int & On-hand quantity, default: 0 \\
+        allocatedQty & Int & Allocated quantity, default: 0 \\
+        holdQty & Int & Hold quantity, default: 0 \\
+        damagedQty & Int & Damaged quantity, default: 0 \\
+        updatedBy & String? & Last modifier \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\subsection{Rack}
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Field} & \textbf{Type} & \textbf{Notes} \\
+        \hline
+        id & UUID & Primary Key \\
+        rackCode & String & Unique rack identifier (e.g., A-01-01) \\
+        zoneType & String & Hazard zone: INFLAMMABLE, TOXIC, FRAGILE, NORMAL \\
+        capacity & Int & Maximum storage units \\
+        currentLoad & Int & Current stored units, default: 0 \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+% -------------------------
+% CHAPTER 7: SYSTEM MODELS
+% -------------------------
+\chapter{System Models}
+
+\section{Use Case Diagram}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,keepaspectratio]{usecase.png}
+    \caption{Use Case Diagram of SmartwareERP System}
+\end{figure}
+
+\clearpage
+
+\section{Activity Diagram}
+\begin{figure}[H]
+    \centering
+    \includegraphics[height=0.85\textheight,keepaspectratio]{activity.png}
+    \caption{Activity Diagram for Warehouse Operations Workflow}
+\end{figure}
+
+\clearpage
+
+\section{Sequence Diagram}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth,keepaspectratio]{sequence1.png}
+    \caption{Sequence Diagram for Inbound Receiving, Putaway, and Dispatch Flow}
+\end{figure}
+
+\clearpage
+
+\section{Class Diagram}
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{\includegraphics[width=1.3\textwidth,keepaspectratio]{class.png}}
+    \caption{Class Diagram of SmartwareERP System Entities}
+\end{figure}
+
+% -------------------------
+% CHAPTER 8: APPENDIX
+% -------------------------
+\chapter{Appendix}
+
+\section{Glossary}
+\begin{itemize}
+    \item \textbf{License Plate (LP):} A unique identifier assigned to a unit of inventory for tracking through the warehouse lifecycle. Stored as the serial number field.
+    \item \textbf{Putaway:} The process of moving received goods from the receiving zone to an appropriate storage rack.
+    \item \textbf{Hazard Classification:} An AI-assigned category (INFLAMMABLE, TOXIC, FRAGILE, NORMAL) that governs safe storage placement.
+    \item \textbf{Dock-to-Stock Time:} The elapsed time between receiving goods at the dock and completing putaway to a storage location.
+    \item \textbf{Rack Zone Type:} A designation on storage racks that restricts them to hold only products with a matching hazard classification.
+    \item \textbf{Seat Map:} A bin-level visualization of rack positions showing occupancy status and stored item details.
+    \item \textbf{SKU:} Stock Keeping Unit -- a unique code identifying a product in the catalogue.
+    \item \textbf{EAN:} European Article Number -- a standardized barcode symbology for product identification.
+    \item \textbf{WMS:} Warehouse Management System.
+    \item \textbf{ERP:} Enterprise Resource Planning.
+    \item \textbf{ORM:} Object-Relational Mapping -- a programming technique for database abstraction (Prisma in this project).
+\end{itemize}
+
+\section{API Endpoint Summary}
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabularx}{\textwidth}{|l|l|X|}
+        \hline
+        \textbf{Method} & \textbf{Endpoint} & \textbf{Description} \\
+        \hline
+        GET & /api/health & Server health check \\
+        \hline
+        GET/POST/PUT/DELETE & /api/products & Product CRUD \\
+        \hline
+        GET/POST/DELETE & /api/inventory & Inventory management \\
+        \hline
+        GET & /api/inventory/putaway-queue & Items pending putaway \\
+        \hline
+        GET & /api/inventory/putaway-suggestion/:lp & AI rack suggestion \\
+        \hline
+        POST & /api/inventory/putaway & Execute putaway \\
+        \hline
+        POST & /api/inventory/dispatch & Outbound dispatch \\
+        \hline
+        GET & /api/inventory/dispatch-history & Shipment logs \\
+        \hline
+        GET & /api/inventory/alerts/low-stock & Low stock alerts \\
+        \hline
+        GET & /api/inventory/alerts/expiry & Expiry alerts \\
+        \hline
+        GET/POST/PUT/DELETE & /api/suppliers & Supplier CRUD \\
+        \hline
+        GET/POST/PUT/DELETE & /api/customers & Customer CRUD \\
+        \hline
+        GET/POST/PUT/DELETE & /api/orders & Order CRUD \\
+        \hline
+        GET/POST/PUT/DELETE & /api/locations & Location CRUD \\
+        \hline
+        GET/POST & /api/racks & Rack management \\
+        \hline
+        GET & /api/warehouse/layout & Warehouse zone layout \\
+        \hline
+        GET & /api/warehouse/seatmap & Bin-level seat map \\
+        \hline
+        GET & /api/warehouse/rack/:code & Rack detail with items \\
+        \hline
+        GET & /api/warehouse/search & Inventory search \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\section{Technology Stack}
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{|l|X|}
+        \hline
+        \textbf{Layer} & \textbf{Technology} \\
+        \hline
+        Runtime & Node.js \\
+        \hline
+        Backend Framework & Express.js 5 \\
+        \hline
+        ORM & Prisma 7.x \\
+        \hline
+        Database & PostgreSQL 14+ \\
+        \hline
+        Frontend Framework & React 18 \\
+        \hline
+        Build Tool & Vite 6 \\
+        \hline
+        UI Components & Radix UI Primitives \\
+        \hline
+        Styling & Tailwind CSS \\
+        \hline
+        Charts & Recharts \\
+        \hline
+        Icons & Lucide React \\
+        \hline
+        AI Service & Google Gemini API (gemini-2.5-flash) \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\section{To Be Determined (TBD)}
+\begin{itemize}
+    \item Production-ready authentication with JWT tokens and password hashing (bcrypt).
+    \item Full implementation of Returns and Cycle Count modules.
+    \item Integration of barcode scanner hardware for warehouse floor operations.
+    \item Real-time WebSocket notifications for critical alerts.
+    \item Multi-warehouse support with cross-dock transfer workflows.
+    \item Mobile-native application for warehouse staff.
+    \item Audit trail and compliance reporting.
+\end{itemize}
+
+\end{document}
