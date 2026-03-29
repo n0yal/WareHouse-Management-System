@@ -6,8 +6,7 @@ import { Button } from "./ui/button"
 import { ScrollArea } from "./ui/scroll-area"
 import { Search, Package, X, MapPin, Layers, Grid3X3, LayoutGrid } from "lucide-react"
 import { WarehouseSeatMap } from "./WarehouseSeatMap"
-
-const API_URL = "http://localhost:5000/api"
+import { API_URL } from "../lib/api"
 
 const getUtilizationColor = (utilization) => {
   if (utilization < 60) return "bg-green-500"

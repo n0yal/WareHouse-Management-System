@@ -23,6 +23,7 @@ const orders_1 = __importDefault(require("./routes/orders"));
 const locations_1 = __importDefault(require("./routes/locations"));
 const racks_1 = __importDefault(require("./routes/racks"));
 const warehouse_1 = __importDefault(require("./routes/warehouse"));
+const expiryNotifier_1 = require("./services/expiryNotifier");
 app.use('/api/health', (req, res) => {
     res.json({ status: 'Server is running', timestamp: new Date() });
 });
@@ -44,6 +45,7 @@ if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });
+    (0, expiryNotifier_1.scheduleDailyExpiryNotifications)();
 }
 module.exports = app;
 module.exports.default = app;

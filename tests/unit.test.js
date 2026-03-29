@@ -5,6 +5,11 @@
  * ============================================================
  */
 
+const {
+  parseExpiryDateInput,
+  evaluateExpiryStatus,
+} = require('../server/services/expiryAlerts');
+
 // ---- Helper functions extracted from inventory.js for testability ----
 
 const VALID_CLASSES = ['INFLAMMABLE', 'TOXIC', 'FRAGILE', 'NORMAL'];
@@ -242,6 +247,52 @@ describe('Unit Tests — SmartwareERP Utilities', () => {
     test('should return null for unrecognized text', () => {
       expect(extractClassification('EXPLOSIVE')).toBeNull();
       expect(extractClassification('')).toBeNull();
+    });
+  });
+
+  // ---- 8. Expiry Date Handling ----
+  describe('parseExpiryDateInput()', () => {
+    test('should store date-only expiry values at end of UTC day', () => {
+      const parsed = parseExpiryDateInput('2026-03-28');
+      expect(parsed.getFullYear()).toBe(2026);
+      expect(parsed.getMonth()).toBe(2);
+      expect(parsed.getDate()).toBe(28);
+      expect(parsed.getHours()).toBe(23);
+      expect(parsed.getMinutes()).toBe(59);
+      expect(parsed.getSeconds()).toBe(59);
+    });
+
+    test('should return null for empty expiry input', () => {
+      expect(parseExpiryDateInput(null)).toBeNull();
+      expect(parseExpiryDateInput('')).toBeNull();
+    });
+
+    test('should reject invalid expiry input', () => {
+      expect(() => parseExpiryDateInput('not-a-date')).toThrow('Invalid expiryDate');
+    });
+  });
+
+  describe('evaluateExpiryStatus()', () => {
+    test('should treat an item as valid throughout its expiry date', () => {
+      const status = evaluateExpiryStatus(
+        parseExpiryDateInput('2026-03-28'),
+        new Date(2026, 2, 28, 12, 0, 0),
+        30,
+      );
+      expect(status.status).toBe('EXPIRING_SOON');
+      expect(status.daysUntilExpiry).toBe(0);
+      expect(status.isExpired).toBe(false);
+    });
+
+    test('should mark an item expired the next calendar day', () => {
+      const status = evaluateExpiryStatus(
+        parseExpiryDateInput('2026-03-28'),
+        new Date(2026, 2, 29, 0, 0, 0),
+        30,
+      );
+      expect(status.status).toBe('EXPIRED');
+      expect(status.daysUntilExpiry).toBeLessThan(0);
+      expect(status.isExpired).toBe(true);
     });
   });
 });

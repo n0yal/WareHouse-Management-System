@@ -5,6 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const db_1 = __importDefault(require("../db"));
+const expiryAlerts_1 = require("../services/expiryAlerts");
+const expiryNotifier_1 = require("../services/expiryNotifier");
 const router = express_1.default.Router();
 const HAZARD_CLASSIFICATIONS = ["INFLAMMABLE", "TOXIC", "FRAGILE", "NORMAL"];
 const normalizeClassification = (value) => {
@@ -233,6 +235,8 @@ router.post('/', async (req, res) => {
     try {
         const { productId, quantity, locationId, updatedBy, lotNumber = null, serialNumber = null, expiryDate = null, txnType = 'adjust', referenceType = 'MANUAL', referenceId = null, reason = 'Inventory upsert via API', } = req.body;
         const nextOnHandQty = parseInt(quantity);
+        const hasExpiryDateField = Object.prototype.hasOwnProperty.call(req.body || {}, 'expiryDate');
+        const parsedExpiryDate = hasExpiryDateField ? (0, expiryAlerts_1.parseExpiryDateInput)(expiryDate) : undefined;
         const existing = await db_1.default.inventory.findFirst({
             where: { productId, locationId, lotNumber, serialNumber },
             include: { product: true },
@@ -253,7 +257,7 @@ router.post('/', async (req, res) => {
                     onHandQty: Number.isNaN(nextOnHandQty) ? 0 : nextOnHandQty,
                     classification: inboundClassification,
                     updatedBy,
-                    expiryDate: expiryDate ? new Date(expiryDate) : existing.expiryDate,
+                    expiryDate: hasExpiryDateField ? parsedExpiryDate : existing.expiryDate,
                 },
                 include: { product: true, location: true },
             });
@@ -267,7 +271,7 @@ router.post('/', async (req, res) => {
                     serialNumber,
                     classification: inboundClassification,
                     rackLocation: null,
-                    expiryDate: expiryDate ? new Date(expiryDate) : null,
+                    expiryDate: parsedExpiryDate || null,
                     onHandQty: Number.isNaN(nextOnHandQty) ? 0 : nextOnHandQty,
                     allocatedQty: 0,
                     holdQty: 0,
@@ -502,50 +506,24 @@ router.get('/alerts/low-stock', async (req, res) => {
 router.get('/alerts/expiry', async (req, res) => {
     try {
         const warningDays = parseInt(req.query.days) || 30;
-        const now = new Date();
-        const warningDate = new Date(now.getTime() + warningDays * 24 * 60 * 60 * 1000);
-        const expiredDate = now;
-        
-        const inventoryItems = await db_1.default.inventory.findMany({
-            where: {
-                expiryDate: { not: null },
-                onHandQty: { gt: 0 }
-            },
-            include: { product: true, location: true }
-        });
-        
-        const alerts = inventoryItems
-            .map(item => {
-                const expiryDate = new Date(item.expiryDate);
-                const isExpired = expiryDate < expiredDate;
-                const isExpiringSoon = !isExpired && expiryDate <= warningDate;
-                
-                if (!isExpired && !isExpiringSoon) return null;
-                
-                const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                
-                return {
-                    id: item.id,
-                    productId: item.productId,
-                    productName: item.product?.name || 'Unknown',
-                    productSku: item.product?.sku || '-',
-                    lotNumber: item.lotNumber || '-',
-                    serialNumber: item.serialNumber || '-',
-                    expiryDate: item.expiryDate,
-                    daysUntilExpiry: daysUntilExpiry,
-                    status: isExpired ? 'EXPIRED' : 'EXPIRING_SOON',
-                    quantity: item.onHandQty,
-                    location: item.location ? `${item.location.zone}-${item.location.aisle}-${item.location.rack}` : '-',
-                    rackLocation: item.rackLocation || '-'
-                };
-            })
-            .filter(Boolean)
-            .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
-        
+        const alerts = await (0, expiryAlerts_1.fetchExpiryAlerts)({ warningDays });
         res.json(alerts);
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to fetch expiry alerts' });
+    }
+});
+router.post('/alerts/expiry/email', async (req, res) => {
+    try {
+        const warningDays = parseInt(req.body?.days || req.query.days) || 30;
+        const force = String(req.body?.force || req.query.force || 'false').toLowerCase() === 'true';
+        const result = await (0, expiryNotifier_1.runExpiryNotificationCycle)({ warningDays, force });
+        const statusCode = result.sent ? 200 : 202;
+        res.status(statusCode).json(result);
+    }
+    catch (error) {
+        const detail = error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({ error: 'Failed to send expiry notification email', detail });
     }
 });
 router.delete('/:id', async (req, res) => {

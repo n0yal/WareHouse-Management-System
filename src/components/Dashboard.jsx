@@ -4,8 +4,7 @@ import { Badge } from "./ui/badge"
 import { Progress } from "./ui/progress"
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar } from "recharts"
 import { AlertTriangle, Boxes, Clock3, PackageCheck, Truck, CalendarX } from "lucide-react"
-
-const API_URL = "http://localhost:5000/api"
+import { API_URL } from "../lib/api"
 
 const fmtHour = (date) => `${date.getHours().toString().padStart(2, "0")}:00`
 

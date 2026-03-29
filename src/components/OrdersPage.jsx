@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Plus, Search, Filter, Eye, Edit, ShoppingCart } from "lucide-react";
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from "../lib/api"
 export function OrdersPage() {
     const [orders, setOrders] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");

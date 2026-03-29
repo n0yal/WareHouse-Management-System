@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { PackageCheck, Scale, ScanLine, Printer } from "lucide-react";
-const API_URL = "http://localhost:5000/api";
+import { API_URL } from "../lib/api"
 export function PackingPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);

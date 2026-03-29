@@ -8,8 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { ScanLine, Boxes, ArrowRight } from "lucide-react"
 import { HazardBadge } from "./HazardBadge"
-
-const API_URL = "http://localhost:5000/api"
+import { API_URL } from "../lib/api"
 const formatReceivedAt = (value) => (value ? new Date(value).toLocaleString() : "-")
 
 export function PutawayPage() {

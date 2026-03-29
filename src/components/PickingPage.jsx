@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ListChecks, ScanLine, Clock3, UserRound } from "lucide-react";
-const API_URL = "http://localhost:5000/api";
+import { API_URL } from "../lib/api"
 export function PickingPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);

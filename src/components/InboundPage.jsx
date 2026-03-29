@@ -9,8 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { Plus, Trash2, Camera, Keyboard, PackageCheck, ScanLine, AlertTriangle } from "lucide-react"
-
-const API_URL = "http://localhost:5000/api"
+import { API_URL } from "../lib/api"
 
 const generateLicensePlate = () => `LP-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`
 const normalizeCode = (value) => (value || "").trim().toLowerCase()

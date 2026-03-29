@@ -6,8 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { Label } from "./ui/label"
 import { Plus, Search, Barcode, Trash2 } from "lucide-react"
-
-const API_URL = "http://localhost:5000/api"
+import { API_URL } from "../lib/api"
 
 export function ProductMasterPage() {
   const [products, setProducts] = useState([])

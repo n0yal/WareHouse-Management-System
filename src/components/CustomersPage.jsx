@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Plus, Search, Users, MapPin, Phone, Mail, Edit, Trash2 } from "lucide-react";
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from "../lib/api"
 export function CustomersPage() {
     const [customers, setCustomers] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");

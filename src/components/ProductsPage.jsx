@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "./ui/label"
 import { Filter, Search, Boxes, ArrowRightLeft, ShieldAlert, History, Pencil, Trash2 } from "lucide-react"
 import { HazardBadge } from "./HazardBadge"
-
-const API_URL = "http://localhost:5000/api"
+import { API_URL } from "../lib/api"
 const formatReceivedAt = (value) => (value ? new Date(value).toLocaleString() : "-")
 
 export function ProductsPage({ role = "admin" }) {

@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Layers3 } from "lucide-react"
-
-const API_URL = "http://localhost:5000/api"
+import { API_URL } from "../lib/api"
 
 export function RacksPage() {
   const [racks, setRacks] = useState([])

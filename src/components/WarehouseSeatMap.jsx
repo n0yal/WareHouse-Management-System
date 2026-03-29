@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
 import { Search, Package, X, ChevronLeft, ChevronRight, Layers } from "lucide-react"
 import * as Tooltip from "@radix-ui/react-tooltip"
-
-const API_URL = "http://localhost:5000/api"
+import { API_URL } from "../lib/api"
 
 const ZONE_COLORS = {
   'Receiving': { bg: '#3b82f6', light: '#1e3a5f', border: '#3b82f6' },
@@ -17,31 +15,32 @@ const ZONE_COLORS = {
   'Dispatch': { bg: '#f97316', light: '#431407', border: '#f97316' }
 }
 
+const SLOT_SIZE = 24
+const SLOT_GAP = 6
+
 function ShelfCell({ isOccupied, isHighlighted, product }) {
+  const baseClassName = "flex h-6 w-6 items-center justify-center rounded-md border transition-transform duration-200 hover:scale-105"
+
   if (isOccupied) {
     return (
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
-          <div className="cursor-pointer">
-            <svg width="40" height="40" viewBox="0 0 40 40" className="transition-transform hover:scale-105">
-              <defs>
-                <linearGradient id="filledGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor={isHighlighted ? "#fbbf24" : "#06b6d4"} />
-                  <stop offset="100%" stopColor={isHighlighted ? "#f59e0b" : "#0891b2"} />
-                </linearGradient>
-                <filter id="filledShadow">
-                  <feDropShadow dx="1" dy="2" stdDeviation="2" floodOpacity="0.3"/>
-                </filter>
-              </defs>
-              <rect x="2" y="2" width="36" height="36" rx="6" fill="url(#filledGrad)" filter="url(#filledShadow)"/>
-              <rect x="4" y="4" width="32" height="14" rx="4" fill="white" opacity="0.2"/>
-              <path d="M14 20 L20 28 L26 20" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <div
+            className={`${baseClassName} cursor-pointer shadow-sm`}
+            style={{
+              background: isHighlighted
+                ? "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)"
+                : "linear-gradient(135deg, #22d3ee 0%, #0891b2 100%)",
+              borderColor: isHighlighted ? "#fcd34d" : "#67e8f9",
+              boxShadow: isHighlighted ? "0 6px 14px rgba(245, 158, 11, 0.28)" : "0 6px 14px rgba(8, 145, 178, 0.24)",
+            }}
+          >
+            <span className="text-[10px] font-black text-white">{product?.quantity > 99 ? "99+" : product?.quantity}</span>
           </div>
         </Tooltip.Trigger>
         {product && (
           <Tooltip.Portal>
-            <Tooltip.Content className="bg-slate-900 border border-slate-600 text-white rounded-xl p-4 shadow-2xl z-50" sideOffset={5}>
+            <Tooltip.Content className="z-50 rounded-xl border border-slate-700 bg-slate-950 p-4 text-white shadow-2xl" sideOffset={8}>
               <div className="space-y-2">
                 <div className="font-bold text-sm">{product.productName}</div>
                 <div className="text-xs text-slate-400">SKU: {product.productSku}</div>
@@ -58,22 +57,18 @@ function ShelfCell({ isOccupied, isHighlighted, product }) {
   return (
     <Tooltip.Root>
       <Tooltip.Trigger asChild>
-        <div className="cursor-pointer">
-          <svg width="40" height="40" viewBox="0 0 40 40" className="transition-transform hover:scale-105">
-            <defs>
-              <linearGradient id="emptyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#166534" />
-                <stop offset="100%" stopColor="#14532d" />
-              </linearGradient>
-            </defs>
-            <rect x="2" y="2" width="36" height="36" rx="6" fill="url(#emptyGrad)" stroke="#22c55e" strokeWidth="2" strokeDasharray="4 2"/>
-            <line x1="10" y1="10" x2="30" y2="30" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
-            <line x1="30" y1="10" x2="10" y2="30" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
-          </svg>
+        <div
+          className={`${baseClassName} cursor-pointer bg-emerald-950/80`}
+          style={{
+            borderColor: "#22c55e",
+            borderStyle: "dashed",
+          }}
+        >
+          <span className="text-[10px] font-bold text-emerald-400">+</span>
         </div>
       </Tooltip.Trigger>
       <Tooltip.Portal>
-        <Tooltip.Content className="bg-slate-800 border border-slate-600 text-white rounded-lg p-2 shadow-xl z-50" sideOffset={5}>
+        <Tooltip.Content className="z-50 rounded-lg border border-slate-700 bg-slate-950 p-2 text-white shadow-xl" sideOffset={8}>
           <div className="text-xs text-slate-300">Empty Slot</div>
           <Tooltip.Arrow className="fill-slate-600" />
         </Tooltip.Content>
@@ -85,8 +80,8 @@ function ShelfCell({ isOccupied, isHighlighted, product }) {
 function RackIcon({ bins, capacity, highlightedBins = [] }) {
   const compsPerRow = 4
   const numRows = Math.ceil(capacity / compsPerRow)
-  
   const rows = []
+
   for (let i = 0; i < numRows; i++) {
     const rowBins = bins.slice(i * compsPerRow, (i + 1) * compsPerRow)
     while (rowBins.length < compsPerRow) {
@@ -96,49 +91,38 @@ function RackIcon({ bins, capacity, highlightedBins = [] }) {
   }
 
   return (
-    <div className="w-full">
-      <svg width="100%" height={numRows * 50 + 30} viewBox={`0 0 180 ${numRows * 50 + 30}`} className="mx-auto">
-        <defs>
-          <linearGradient id="shelfGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#374151" />
-            <stop offset="100%" stopColor="#1f2937" />
-          </linearGradient>
-          <linearGradient id="shelfEdge" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#4b5563" />
-            <stop offset="100%" stopColor="#374151" />
-          </linearGradient>
-        </defs>
-        
-        {rows.map((row, rowIdx) => (
-          <g key={rowIdx}>
-            <rect x="5" y={rowIdx * 50 + 5} width="170" height="8" fill="url(#shelfGrad)" rx="1"/>
-            <rect x="5" y={rowIdx * 50 + 13} width="170" height="35" fill="url(#shelfEdge)" rx="2"/>
-            
-            {row.map((bin, binIdx) => {
-              const isHighlighted = highlightedBins.includes(bin.item?.productSku)
-              const isOccupied = bin.item && bin.item.quantity > 0
-              const xPos = 10 + binIdx * 42
-              
-              return (
-                <g key={binIdx} transform={`translate(${xPos}, ${rowIdx * 50 + 15})`}>
-                  <foreignObject width="40" height="40">
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ShelfCell 
-                        isOccupied={isOccupied} 
-                        isHighlighted={isHighlighted}
-                        product={bin.item}
-                      />
-                    </div>
-                  </foreignObject>
-                </g>
-              )
-            })}
-          </g>
-        ))}
-        
-        <rect x="2" y="2" width="6" height={numRows * 50 + 25} fill="#6b7280" rx="2"/>
-        <rect x="172" y="2" width="6" height={numRows * 50 + 25} fill="#6b7280" rx="2"/>
-      </svg>
+    <div
+      className="mx-auto w-fit rounded-2xl border border-slate-700 bg-slate-950/90 p-2"
+      style={{ minWidth: compsPerRow * SLOT_SIZE + (compsPerRow - 1) * SLOT_GAP + 28 }}
+    >
+      {rows.map((row, rowIdx) => (
+        <div key={rowIdx} className="mb-2 last:mb-0">
+          <div className="mb-1 h-1.5 rounded-full bg-slate-600/80" />
+          <div className="rounded-xl border border-slate-700 bg-slate-800/85 px-2 py-2">
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `repeat(${compsPerRow}, ${SLOT_SIZE}px)`,
+                gap: `${SLOT_GAP}px`,
+              }}
+            >
+              {row.map((bin, binIdx) => {
+                const isHighlighted = highlightedBins.includes(bin.item?.productSku)
+                const isOccupied = Boolean(bin.item && bin.item.quantity > 0)
+
+                return (
+                  <ShelfCell
+                    key={`${rowIdx}-${binIdx}`}
+                    isOccupied={isOccupied}
+                    isHighlighted={isHighlighted}
+                    product={bin.item}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -150,25 +134,25 @@ function RackCard({ rack, zoneColor, highlightedBins = [] }) {
   
   return (
     <div 
-      className="bg-slate-800 rounded-2xl overflow-hidden hover:ring-2 transition-all cursor-pointer"
-      style={{ ringColor: zoneColor.bg }}
+      className="overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-900/95 shadow-[0_12px_32px_rgba(2,6,23,0.32)] transition-all hover:-translate-y-0.5"
     >
       <div className="h-2" style={{ backgroundColor: zoneColor.bg }} />
       
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
+      <div className="p-3">
+        <div className="mb-2 flex items-start justify-between gap-2">
           <div>
-            <h3 className="font-bold text-lg text-white">{rack.rackCode}</h3>
-            <p className="text-xs text-slate-400">{rack.zone}</p>
+            <h3 className="font-mono text-sm font-bold tracking-wide text-slate-50">{rack.rackCode}</h3>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-300">{rack.zone}</p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold" style={{ color: isHighUtil ? '#ef4444' : zoneColor.bg }}>
+            <div className="text-base font-black" style={{ color: isHighUtil ? '#f87171' : zoneColor.bg }}>
               {utilization}%
             </div>
+            <div className="text-[9px] uppercase tracking-[0.16em] text-slate-400">Utilized</div>
           </div>
         </div>
 
-        <div className="bg-slate-900 rounded-xl p-2 mb-3">
+        <div className="mb-2 rounded-xl border border-slate-700/70 bg-slate-950/70 p-2">
           <RackIcon 
             bins={rack.bins} 
             capacity={rack.capacity}
@@ -176,12 +160,12 @@ function RackCard({ rack, zoneColor, highlightedBins = [] }) {
           />
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between text-[11px]">
+          <div className="flex items-center gap-2 text-slate-300">
             <span>{occupiedCount} filled</span>
             <span>{rack.capacity - occupiedCount} empty</span>
           </div>
-          <span className="text-white font-medium">{rack.currentLoad} units</span>
+          <span className="font-semibold text-slate-50">{rack.currentLoad} units</span>
         </div>
       </div>
     </div>
@@ -280,10 +264,10 @@ export function WarehouseSeatMap() {
 
   return (
     <Tooltip.Provider>
-      <div className="h-full flex flex-col bg-slate-950">
+      <div className="h-full flex flex-col bg-slate-950 text-slate-50">
         <div className="p-6 pb-4">
-          <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
-            <div className="flex items-center justify-between">
+          <div className="rounded-[28px] border border-slate-800 bg-slate-900 p-6 shadow-[0_24px_70px_rgba(2,6,23,0.35)]">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ backgroundColor: zoneColor.light }}>
                   <Layers className="w-8 h-8" style={{ color: zoneColor.bg }} />
@@ -296,14 +280,14 @@ export function WarehouseSeatMap() {
                 </div>
               </div>
 
-              <form onSubmit={handleSearch} className="flex items-center gap-3">
+              <form onSubmit={handleSearch} className="flex flex-1 flex-wrap items-center gap-3 xl:max-w-xl xl:justify-center">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                   <Input
                     placeholder="Search products..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-12 h-12 rounded-xl bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 w-64"
+                    className="h-12 w-64 rounded-xl border-slate-700 bg-slate-800 pl-12 text-white placeholder:text-slate-500 md:w-80"
                   />
                 </div>
                 <Button type="submit" disabled={searching || searchQuery.length < 2} className="h-12 px-6 rounded-xl" style={{ backgroundColor: zoneColor.bg }}>
@@ -316,7 +300,7 @@ export function WarehouseSeatMap() {
                 )}
               </form>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Button variant="outline" size="icon" onClick={goToPrevZone} className="h-12 w-12 rounded-full border-slate-700 text-slate-300 hover:bg-slate-800">
                   <ChevronLeft className="h-6 w-6" />
                 </Button>
@@ -347,18 +331,18 @@ export function WarehouseSeatMap() {
 
         {searchResults.length > 0 && (
           <div className="px-6 pb-4">
-            <div className="bg-slate-900 rounded-xl p-4 border border-slate-800">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-white font-medium">Search Results ({searchResults.length})</span>
                 <Badge style={{ backgroundColor: zoneColor.bg }}>{searchResults.length} found</Badge>
               </div>
               <div className="flex flex-wrap gap-2">
                 {searchResults.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2 px-3 py-2 bg-slate-800 rounded-lg">
+                  <div key={item.id} className="flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2">
                     <Package className="w-4 h-4 text-slate-400" />
                     <span className="text-white text-sm">{item.productName}</span>
                     <span className="text-slate-500 text-xs">({item.productSku})</span>
-                    <span className="text-slate-400 text-xs">{item.rackLocation}</span>
+                    <span className="text-slate-300 text-xs">{item.rackLocation || "Receiving"}</span>
                   </div>
                 ))}
               </div>
@@ -367,7 +351,7 @@ export function WarehouseSeatMap() {
         )}
 
         <div className="flex-1 p-6 pt-0 overflow-auto">
-          <div className="grid grid-cols-5 gap-4 mb-6">
+          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
             {[
               { label: 'Racks', value: zoneStats?.totalRacks || 0, color: 'text-white' },
               { label: 'Utilization', value: zoneStats?.totalCapacity ? Math.round((zoneStats.totalLoad / zoneStats.totalCapacity) * 100) + '%' : '0%', color: 'text-white' },
@@ -375,14 +359,14 @@ export function WarehouseSeatMap() {
               { label: 'Empty', value: zoneStats?.emptyBins || 0, color: 'text-green-400' },
               { label: 'Units', value: zoneStats?.totalLoad || 0, color: 'text-white' }
             ].map((stat, i) => (
-              <div key={i} className="bg-slate-900 rounded-xl p-4 border border-slate-800">
+              <div key={i} className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
                 <div className="text-slate-400 text-sm">{stat.label}</div>
                 <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
               </div>
             ))}
           </div>
 
-          <div className="rounded-3xl p-6" style={{ backgroundColor: zoneColor.light }}>
+          <div className="rounded-[32px] border border-slate-800/80 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]" style={{ background: `linear-gradient(180deg, ${zoneColor.light} 0%, #0f172a 100%)` }}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: zoneColor.bg }} />
@@ -391,7 +375,7 @@ export function WarehouseSeatMap() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {selectedZone?.racks.map((rack) => (
                 <RackCard
                   key={rack.rackCode}
@@ -410,35 +394,17 @@ export function WarehouseSeatMap() {
         </div>
 
         <div className="px-6 pb-6">
-          <div className="bg-slate-900 rounded-2xl p-4 flex items-center justify-center gap-12 border border-slate-800">
+          <div className="flex flex-wrap items-center justify-center gap-8 rounded-2xl border border-slate-800 bg-slate-900 p-4">
             <div className="flex items-center gap-3">
-              <svg width="32" height="32" viewBox="0 0 40 40">
-                <rect x="2" y="2" width="36" height="36" rx="6" fill="#166534" stroke="#22c55e" strokeWidth="2" strokeDasharray="4 2"/>
-                <line x1="10" y1="10" x2="30" y2="30" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
-                <line x1="30" y1="10" x2="10" y2="30" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
-              </svg>
+              <div className="flex h-6 w-6 items-center justify-center rounded-md border border-dashed border-emerald-500 bg-emerald-950/80 text-[10px] font-bold text-emerald-400">+</div>
               <span className="text-slate-300">Empty</span>
             </div>
             <div className="flex items-center gap-3">
-              <svg width="32" height="32" viewBox="0 0 40 40">
-                <rect x="2" y="2" width="36" height="36" rx="6" fill="url(#filledGrad2)"/>
-                <defs>
-                  <linearGradient id="filledGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#06b6d4" />
-                    <stop offset="100%" stopColor="#0891b2" />
-                  </linearGradient>
-                </defs>
-                <rect x="4" y="4" width="32" height="14" rx="4" fill="white" opacity="0.2"/>
-                <path d="M14 20 L20 28 L26 20" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <div className="flex h-6 w-6 items-center justify-center rounded-md border border-cyan-300 bg-gradient-to-br from-cyan-400 to-cyan-700 text-[10px] font-black text-white">12</div>
               <span className="text-slate-300">Filled</span>
             </div>
             <div className="flex items-center gap-3">
-              <svg width="32" height="32" viewBox="0 0 40 40">
-                <rect x="2" y="2" width="36" height="36" rx="6" fill="#fbbf24"/>
-                <rect x="4" y="4" width="32" height="14" rx="4" fill="white" opacity="0.3"/>
-                <path d="M14 20 L20 28 L26 20" stroke="#78350f" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <div className="flex h-6 w-6 items-center justify-center rounded-md border border-amber-300 bg-gradient-to-br from-amber-300 to-amber-500 text-[10px] font-black text-slate-900">12</div>
               <span className="text-slate-300">Search Match</span>
             </div>
           </div>

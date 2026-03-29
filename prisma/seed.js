@@ -52,9 +52,9 @@ async function main() {
     // Create sample locations
     const locations = [
         { name: 'Receiving Zone', zone: 'R', aisle: '0', rack: '0', shelf: '0', capacity: 1000, locationType: 'receiving' },
-        { name: 'Zone A Rack 1', zone: 'A', aisle: '1', rack: '1', shelf: '1', capacity: 100, locationType: 'storage' },
-        { name: 'Zone A Rack 2', zone: 'A', aisle: '1', rack: '2', shelf: '1', capacity: 100, locationType: 'storage' },
-        { name: 'Zone B Rack 1', zone: 'B', aisle: '1', rack: '1', shelf: '1', capacity: 150, locationType: 'storage' },
+        { name: 'Zone A Rack 1', zone: 'A', aisle: '1', rack: '1', shelf: '1', capacity: 40, locationType: 'storage' },
+        { name: 'Zone A Rack 2', zone: 'A', aisle: '1', rack: '2', shelf: '1', capacity: 40, locationType: 'storage' },
+        { name: 'Zone B Rack 1', zone: 'B', aisle: '1', rack: '1', shelf: '1', capacity: 40, locationType: 'storage' },
     ];
     for (const l of locations) {
         await prisma.location.upsert({
@@ -64,10 +64,10 @@ async function main() {
         });
     }
     const racks = [
-        { rackCode: 'A-1-1', zoneType: 'NORMAL', capacity: 100 },
-        { rackCode: 'A-1-2', zoneType: 'FRAGILE', capacity: 100 },
-        { rackCode: 'B-1-1', zoneType: 'TOXIC', capacity: 150 },
-        { rackCode: 'C-1-1', zoneType: 'INFLAMMABLE', capacity: 120 },
+        { rackCode: 'A-1-1', zoneType: 'NORMAL', capacity: 40 },
+        { rackCode: 'A-1-2', zoneType: 'FRAGILE', capacity: 40 },
+        { rackCode: 'B-1-1', zoneType: 'TOXIC', capacity: 40 },
+        { rackCode: 'C-1-1', zoneType: 'INFLAMMABLE', capacity: 40 },
     ];
     // Backward-safe: if Prisma client/schema is not regenerated yet, `prisma.rack` can be undefined.
     if (prisma.rack && typeof prisma.rack.upsert === 'function') {
