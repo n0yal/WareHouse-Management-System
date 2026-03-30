@@ -31,9 +31,11 @@ const toStorageStatus = (record) => {
 };
 const getLegacyStatus = (record) => {
     const availableQty = record.onHandQty - record.allocatedQty - record.holdQty - record.damagedQty;
+    const minStockLevel = Math.max(0, Number(record.product?.minStockLevel) || 0);
+    const storageStatus = toStorageStatus(record);
     if (availableQty <= 0)
         return 'out_of_stock';
-    if (availableQty < 10)
+    if (storageStatus === 'STORED' && availableQty <= minStockLevel)
         return 'low_stock';
     return 'in_stock';
 };
@@ -176,7 +178,9 @@ router.get('/', async (req, res) => {
         res.json(inventory.map(toLegacyShape));
     }
     catch (error) {
-        res.status(500).json({ error: 'Failed to fetch inventory' });
+        const detail = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[inventory/get] Failed to fetch inventory:', error);
+        res.status(500).json({ error: 'Failed to fetch inventory', detail });
     }
 });
 router.get('/location/:locationId', async (req, res) => {

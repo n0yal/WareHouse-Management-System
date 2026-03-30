@@ -34,19 +34,38 @@ export function ProductsPage({ role = "admin" }) {
   const fetchAll = async () => {
     try {
       setLoading(true)
+      setError(null)
       const [inventoryRes, locationsRes] = await Promise.all([
         fetch(`${API_URL}/inventory`),
         fetch(`${API_URL}/locations`),
       ])
 
-      if (!inventoryRes.ok || !locationsRes.ok) {
-        throw new Error("Failed to load inventory data")
+      const [inventoryData, locationsData] = await Promise.all([
+        inventoryRes.json().catch(() => null),
+        locationsRes.json().catch(() => null),
+      ])
+
+      if (!inventoryRes.ok) {
+        throw new Error(inventoryData?.detail || inventoryData?.error || "Failed to load inventory data")
       }
 
-      const [inventoryData, locationsData] = await Promise.all([inventoryRes.json(), locationsRes.json()])
+      if (!locationsRes.ok) {
+        throw new Error(locationsData?.detail || locationsData?.error || "Failed to load locations")
+      }
+
+      if (!Array.isArray(inventoryData)) {
+        throw new Error("Inventory API returned an invalid response")
+      }
+
+      if (!Array.isArray(locationsData)) {
+        throw new Error("Locations API returned an invalid response")
+      }
+
       setInventory(inventoryData)
       setLocations(locationsData)
     } catch (err) {
+      setInventory([])
+      setLocations([])
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setLoading(false)

@@ -23,9 +23,20 @@ const orders_1 = __importDefault(require("./routes/orders"));
 const locations_1 = __importDefault(require("./routes/locations"));
 const racks_1 = __importDefault(require("./routes/racks"));
 const warehouse_1 = __importDefault(require("./routes/warehouse"));
+const db_1 = __importDefault(require("./db"));
 const expiryNotifier_1 = require("./services/expiryNotifier");
 app.use('/api/health', (req, res) => {
     res.json({ status: 'Server is running', timestamp: new Date() });
+});
+app.get('/api/health/db', async (req, res) => {
+    try {
+        await db_1.default.$queryRaw `SELECT 1`;
+        res.json({ status: 'Database is connected', timestamp: new Date() });
+    }
+    catch (error) {
+        const detail = error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({ status: 'Database connection failed', detail, timestamp: new Date() });
+    }
 });
 app.use('/api/products', products_1.default);
 app.use('/api/inventory', inventory_1.default);

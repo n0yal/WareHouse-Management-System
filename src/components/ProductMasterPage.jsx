@@ -13,6 +13,7 @@ export function ProductMasterPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState("")
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchProducts()
@@ -21,11 +22,23 @@ export function ProductMasterPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
+      setError(null)
       const res = await fetch(`${API_URL}/products`)
-      const data = await res.json()
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        throw new Error(data?.detail || data?.error || "Failed to fetch products")
+      }
+
+      if (!Array.isArray(data)) {
+        throw new Error("Products API returned an invalid response")
+      }
+
       setProducts(data)
     } catch (err) {
       console.error("Failed to fetch products:", err)
+      setProducts([])
+      setError(err instanceof Error ? err.message : "Failed to fetch products")
     } finally {
       setLoading(false)
     }
@@ -42,6 +55,7 @@ export function ProductMasterPage() {
   })
 
   if (loading) return <div className="p-6">Loading products...</div>
+  if (error) return <div className="p-6 text-red-500">Error: {error}</div>
 
   const handleDeleteProduct = async (product) => {
     const confirmed = window.confirm(`Delete product "${product.name}"? This cannot be undone.`)

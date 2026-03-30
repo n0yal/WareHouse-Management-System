@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -6,12 +6,22 @@ import { Label } from "./ui/label"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-import { ScanLine, Boxes, ArrowRight } from "lucide-react"
+import { ScanLine, Boxes, ArrowRight, Camera } from "lucide-react"
 import { HazardBadge } from "./HazardBadge"
 import { API_URL } from "../lib/api"
+import { useIsMobile } from "./ui/use-mobile"
 const formatReceivedAt = (value) => (value ? new Date(value).toLocaleString() : "-")
+const normalizeCode = (value) => (value || "").trim().toLowerCase()
 
 export function PutawayPage() {
+  const isMobile = useIsMobile()
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
+  const detectorRef = useRef(null)
+  const zxingReaderRef = useRef(null)
+  const zxingControlsRef = useRef(null)
+  const scanRafRef = useRef(null)
+  const scanBusyRef = useRef(false)
   const [queue, setQueue] = useState([])
   const [racks, setRacks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -20,9 +30,15 @@ export function PutawayPage() {
   const [selectedInventoryId, setSelectedInventoryId] = useState("")
   const [rackScan, setRackScan] = useState("")
   const [selectedRackCode, setSelectedRackCode] = useState("")
+  const [isCameraScanning, setIsCameraScanning] = useState(false)
+  const [scanError, setScanError] = useState("")
+  const [scanEngine, setScanEngine] = useState("")
 
   useEffect(() => {
     refreshData()
+    return () => {
+      stopCameraScan()
+    }
   }, [])
 
   const refreshData = async () => {
@@ -71,6 +87,133 @@ export function PutawayPage() {
   }, [selectedItem, selectedRackCode, suggestedRackByInventoryId])
 
   const selectedRack = racks.find((rack) => rack.rackCode === selectedRackCode)
+
+  const applyRackScan = (value) => {
+    if (!value || value.length < 2) return false
+    const matchedRack = racks.find((rack) => normalizeCode(rack.rackCode) === normalizeCode(value))
+    setRackScan(value)
+    if (!matchedRack) return false
+    setSelectedRackCode(matchedRack.rackCode)
+    setScanError("")
+    stopCameraScan()
+    return true
+  }
+
+  const stopCameraScan = () => {
+    if (zxingControlsRef.current) {
+      try {
+        zxingControlsRef.current.stop()
+      } catch {}
+      zxingControlsRef.current = null
+    }
+    if (zxingReaderRef.current?.reset) {
+      try {
+        zxingReaderRef.current.reset()
+      } catch {}
+    }
+    if (scanRafRef.current) {
+      cancelAnimationFrame(scanRafRef.current)
+      scanRafRef.current = null
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+    setIsCameraScanning(false)
+    setScanEngine("")
+    scanBusyRef.current = false
+  }
+
+  const scanFrame = async () => {
+    if (!isCameraScanning || !videoRef.current || !detectorRef.current) return
+
+    if (scanBusyRef.current) {
+      scanRafRef.current = requestAnimationFrame(scanFrame)
+      return
+    }
+    if (videoRef.current.readyState < 2) {
+      scanRafRef.current = requestAnimationFrame(scanFrame)
+      return
+    }
+
+    scanBusyRef.current = true
+    try {
+      const codes = await detectorRef.current.detect(videoRef.current)
+      if (codes.length > 0) {
+        const rawValue = codes[0]?.rawValue || ""
+        const matched = applyRackScan(rawValue)
+        if (!matched) {
+          setScanError("Barcode detected, but it does not match any rack code.")
+        }
+      }
+    } catch {
+      setScanError("Camera active, but rack barcode not detected yet.")
+    } finally {
+      scanBusyRef.current = false
+    }
+
+    scanRafRef.current = requestAnimationFrame(scanFrame)
+  }
+
+  const startZXingFallback = async () => {
+    setScanError("")
+    try {
+      const mod = await import("https://esm.sh/@zxing/browser@0.1.5")
+      const BrowserMultiFormatReader = mod.BrowserMultiFormatReader
+      const reader = new BrowserMultiFormatReader()
+      zxingReaderRef.current = reader
+
+      const controls = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result) => {
+        if (!result) return
+        const rawValue = result.getText ? result.getText() : String(result.text || "")
+        const matched = applyRackScan(rawValue)
+        if (!matched) {
+          setScanError("Barcode detected, but it does not match any rack code.")
+        }
+      })
+
+      zxingControlsRef.current = controls
+      setIsCameraScanning(true)
+      setScanEngine("zxing")
+    } catch {
+      setScanError("Barcode scanning is not supported in this browser. Enter rack code manually.")
+      stopCameraScan()
+    }
+  }
+
+  const startCameraScan = async () => {
+    setScanError("")
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      })
+      streamRef.current = stream
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+
+      const BarcodeDetectorCtor = globalThis.BarcodeDetector
+      if (BarcodeDetectorCtor) {
+        try {
+          detectorRef.current = new BarcodeDetectorCtor({
+            formats: ["code_128", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code"],
+          })
+        } catch {
+          detectorRef.current = new BarcodeDetectorCtor()
+        }
+        setIsCameraScanning(true)
+        setScanEngine("native")
+        scanRafRef.current = requestAnimationFrame(scanFrame)
+      } else {
+        await startZXingFallback()
+      }
+    } catch {
+      setScanError("Unable to access camera. Check browser camera permissions or type rack code manually.")
+      stopCameraScan()
+    }
+  }
 
   const fetchServerSuggestion = async (lp) => {
     try {
@@ -211,6 +354,38 @@ export function PutawayPage() {
               Rack load: {selectedRack.currentLoad}/{selectedRack.capacity}
             </p>
           )}
+
+          <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label>Rack Camera Scan</Label>
+                <p className="text-sm text-muted-foreground">
+                  {isMobile ? "Use mobile camera" : "Use desktop camera"} to scan the destination rack barcode.
+                </p>
+              </div>
+              {!isCameraScanning ? (
+                <Button onClick={startCameraScan} variant="outline">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Scan Rack
+                </Button>
+              ) : (
+                <Button variant="destructive" onClick={stopCameraScan}>
+                  Stop Camera
+                </Button>
+              )}
+            </div>
+
+            <video
+              ref={videoRef}
+              className="w-full h-56 object-cover rounded-md bg-black"
+              playsInline
+              muted
+              autoPlay
+            />
+
+            {scanEngine && <p className="text-xs text-muted-foreground">Scanner engine: {scanEngine}</p>}
+            {scanError && <p className="text-sm text-red-600">{scanError}</p>}
+          </div>
 
           <div className="flex justify-end">
             <Button onClick={completePutaway}>
