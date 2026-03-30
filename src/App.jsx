@@ -17,6 +17,7 @@ import { RacksPage } from "./components/RacksPage";
 import { WarehouseLayoutPage } from "./components/WarehouseLayoutPage";
 import { Button } from "./components/ui/button";
 import { LoginPage } from "./components/LoginPage";
+import { useIsMobile } from "./components/ui/use-mobile";
 
 const ACCESS = {
     admin: [
@@ -40,6 +41,7 @@ const ACCESS = {
 export default function App() {
     const [activeSection, setActiveSection] = useState("dashboard");
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const isMobile = useIsMobile();
     const [user, setUser] = useState(() => {
         try {
             const raw = localStorage.getItem("wms_user");
@@ -56,6 +58,11 @@ export default function App() {
             setActiveSection(allowedSections[0]);
         }
     }, [activeSection, allowedSections]);
+    useEffect(() => {
+        if (!isMobile && mobileNavOpen) {
+            setMobileNavOpen(false);
+        }
+    }, [isMobile, mobileNavOpen]);
     const handleLogin = (session) => {
         setUser(session);
         localStorage.setItem("wms_user", JSON.stringify(session));
@@ -110,7 +117,9 @@ export default function App() {
     }
     return (<div className="h-screen bg-background overflow-hidden">
       <div className="flex h-full min-h-0">
-        <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} className="!hidden md:!flex" role={role} userName={user.name} onLogout={handleLogout}/>
+        <div className="hidden h-full md:block">
+          <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} role={role} userName={user.name} onLogout={handleLogout}/>
+        </div>
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <header className="h-14 border-b border-border px-4 flex items-center justify-between shrink-0 md:hidden">
             <div className="flex items-center gap-2 min-w-0">
@@ -128,9 +137,9 @@ export default function App() {
               {mobileNavOpen ? <X className="h-4 w-4"/> : <Menu className="h-4 w-4"/>}
             </Button>
           </header>
-          {mobileNavOpen && (<div className="fixed inset-0 z-50 md:hidden">
+          {isMobile && mobileNavOpen && (<div className="fixed inset-0 z-50 md:hidden">
               <div className="absolute inset-0 bg-black/50" onClick={() => setMobileNavOpen(false)}/>
-              <div className="absolute left-0 top-0 h-full w-[280px] bg-background">
+              <div className="absolute left-0 top-0 h-full w-[78vw] max-w-[280px] bg-background shadow-xl">
                 <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} className="w-full border-r-0" onNavigate={() => setMobileNavOpen(false)} role={role} userName={user.name} onLogout={handleLogout}/>
               </div>
             </div>)}

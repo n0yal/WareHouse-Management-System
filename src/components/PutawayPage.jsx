@@ -91,7 +91,7 @@ export function PutawayPage() {
   const applyRackScan = (value) => {
     if (!value || value.length < 2) return false
     const matchedRack = racks.find((rack) => normalizeCode(rack.rackCode) === normalizeCode(value))
-    setRackScan(value)
+    setRackScan(matchedRack ? matchedRack.rackCode : value)
     if (!matchedRack) return false
     setSelectedRackCode(matchedRack.rackCode)
     setScanError("")
@@ -253,7 +253,7 @@ export function PutawayPage() {
       return
     }
 
-    if (!rackScan || rackScan !== selectedRackCode) {
+    if (!rackScan || normalizeCode(rackScan) !== normalizeCode(selectedRackCode)) {
       alert(`Rack scan mismatch. Scan ${selectedRackCode} to confirm putaway.`)
       return
     }
@@ -344,7 +344,15 @@ export function PutawayPage() {
               <Input
                 placeholder={selectedRackCode || "A-1-1"}
                 value={rackScan}
-                onChange={(e) => setRackScan(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setRackScan(value)
+                  if (value.trim().length >= 2) {
+                    applyRackScan(value)
+                  } else {
+                    setScanError("")
+                  }
+                }}
               />
             </div>
           </div>
