@@ -78,7 +78,7 @@
             "server": "node server/index.js",
             "render-start": "node server/index.js",
             "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-			"db:generate": "prisma generate",
+			"db:generate": "prisma generate --generator client",
 			"db:migrate:deploy": "prisma migrate deploy",
 			"db:seed": "node prisma/seed.js",
 			"test": "npm run test:unit",
