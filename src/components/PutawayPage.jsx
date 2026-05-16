@@ -12,6 +12,7 @@ import { API_URL } from "../lib/api"
 import { useIsMobile } from "./ui/use-mobile"
 const formatReceivedAt = (value) => (value ? new Date(value).toLocaleString() : "-")
 const normalizeCode = (value) => (value || "").trim().toLowerCase()
+const normalizeRackCode = (value) => normalizeCode(value).replace(/[^a-z0-9]/g, "")
 
 export function PutawayPage() {
   const isMobile = useIsMobile()
@@ -75,7 +76,9 @@ export function PutawayPage() {
     return result
   }, [queue, racks])
 
-  const selectedItem = queue.find((item) => item.id === selectedInventoryId) || queue.find((item) => item.serialNumber === licensePlateScan)
+  const selectedItem =
+    queue.find((item) => item.id === selectedInventoryId) ||
+    queue.find((item) => normalizeCode(item.serialNumber) === normalizeCode(licensePlateScan))
 
   useEffect(() => {
     if (!selectedItem) return
@@ -90,7 +93,9 @@ export function PutawayPage() {
 
   const applyRackScan = (value) => {
     if (!value || value.length < 2) return false
-    const matchedRack = racks.find((rack) => normalizeCode(rack.rackCode) === normalizeCode(value))
+    const matchedRack =
+      racks.find((rack) => normalizeCode(rack.rackCode) === normalizeCode(value)) ||
+      racks.find((rack) => normalizeRackCode(rack.rackCode) === normalizeRackCode(value))
     setRackScan(matchedRack ? matchedRack.rackCode : value)
     if (!matchedRack) return false
     setSelectedRackCode(matchedRack.rackCode)
@@ -185,7 +190,11 @@ export function PutawayPage() {
     setScanError("")
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       })
       streamRef.current = stream
 
@@ -235,7 +244,7 @@ export function PutawayPage() {
 
   const handleScanLicensePlate = async (value) => {
     setLicensePlateScan(value)
-    const matched = queue.find((item) => item.serialNumber === value)
+    const matched = queue.find((item) => normalizeCode(item.serialNumber) === normalizeCode(value))
     if (matched) {
       setSelectedInventoryId(matched.id)
       setRackScan("")
@@ -253,7 +262,7 @@ export function PutawayPage() {
       return
     }
 
-    if (!rackScan || normalizeCode(rackScan) !== normalizeCode(selectedRackCode)) {
+    if (!rackScan || normalizeRackCode(rackScan) !== normalizeRackCode(selectedRackCode)) {
       alert(`Rack scan mismatch. Scan ${selectedRackCode} to confirm putaway.`)
       return
     }

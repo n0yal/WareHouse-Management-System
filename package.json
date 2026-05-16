@@ -74,8 +74,13 @@
       "scripts": {
             "dev": "vite",
             "build": "vite build",
+            "render-build": "npm run build",
             "server": "node server/index.js",
+            "render-start": "node server/index.js",
             "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
+			"db:generate": "prisma generate",
+			"db:migrate:deploy": "prisma migrate deploy",
+			"db:seed": "node prisma/seed.js",
 			"test": "npm run test:unit",
 			"test:all": "NODE_OPTIONS=--no-webstorage jest --verbose",
 			"test:unit": "NODE_OPTIONS=--no-webstorage jest tests/unit.test.js --verbose",
